@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7f8">
+  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Qaza Salah">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <title>Qaza Salah Tracker</title>
+  <link rel="apple-touch-startup-image" href="icons/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="splash" id="splash" aria-hidden="true">
+    <img src="icons/icon-192.png" alt="" width="96" height="96">
+    <p class="splash-greet">Assalam-o-Alaikum</p>
+    <p class="splash-name">Asim Shahzad</p>
+    <p class="splash-bismillah" lang="ar" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+    <p class="splash-app">Qaza Salah Tracker</p>
+  </div>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand-mark" aria-hidden="true">☾</div>
+      <div class="topbar-right">
+        <button class="sync-chip" id="syncChip" hidden aria-label="Google Drive sync status"></button>
+        <button class="settings-btn" id="settingsBtn" aria-label="Settings" title="Settings">⚙</button>
+      </div>
+    </header>
+
+    <!-- OVERVIEW -->
+    <div id="overviewSection">
+      <section class="welcome">
+        <p class="eyebrow">Assalam-o-Alaikum</p>
+        <h1>Asim Shahzad</h1>
+        <p class="bismillah" lang="ar" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+        <p class="welcome-note">Your salah journey, one day at a time.</p>
+      </section>
+
+      <section class="overview-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR JOURNEY</p>
+            <h2>Overview</h2>
+          </div>
+          <span class="today-chip" id="todayLabel"></span>
+        </div>
+
+        <!-- 1. Current Month (first) -->
+        <div class="progress-card current-card" id="currentJump" role="button" tabindex="0" aria-label="Open the Current tracker">
+          <span class="card-topline"><span id="currentTitle">Progress</span><span class="arrow">↗</span></span>
+          <span class="progress-number" id="currentDone">0</span>
+          <span class="progress-caption" id="currentCaption">of 0 prayers completed</span>
+          <span class="progress-track"><i id="currentBar"></i></span>
+          <span class="progress-foot"><span id="currentRemaining">0 remaining</span><span id="currentPercent">0%</span></span>
+          <span class="prayer-bars" id="prayerBars"></span>
+        </div>
+
+        <!-- 2. Qaza Progress (second) -->
+        <div class="progress-card qaza-card" id="qazaJump" role="button" tabindex="0" aria-label="Open the Qaza tracker">
+          <span class="card-topline"><span>Qaza Progress</span><span class="arrow">↗</span></span>
+          <span class="progress-number" id="qazaDone">0</span>
+          <span class="progress-caption" id="qazaCaption">Qaza prayers completed</span>
+          <span class="progress-track"><i id="qazaBar"></i></span>
+          <span class="progress-foot"><span id="qazaRemaining">0 remaining</span><span id="qazaPercent">0%</span></span>
+        </div>
+      </section>
+    </div>
+
+    <!-- TRACKER (shared calendar for Qaza and Current) -->
+    <section class="tracker-section" id="trackerSection" hidden>
+      <div class="section-heading tracker-heading">
+        <div>
+          <p class="eyebrow" id="trackerEyebrow">HISTORICAL QAZA</p>
+          <h2 id="trackerTitle">Qaza Tracker</h2>
+        </div>
+        <button class="today-btn" id="todayBtn">Latest</button>
+      </div>
+
+      <div class="calendar-card">
+        <div class="month-controls">
+          <button class="month-arrow" id="prevMonth" aria-label="Previous month">‹</button>
+          <h3 id="monthTitle">November 2026</h3>
+          <button class="month-arrow" id="nextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="weekdays">
+          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="legend">
+          <span><i style="--dot:#91D2EC"></i>Fajr</span>
+          <span><i style="--dot:#F4D477"></i>Zuhr</span>
+          <span><i style="--dot:#E7A078"></i>Asr</span>
+          <span><i style="--dot:#7773B8"></i>Maghrib</span>
+          <span><i style="--dot:#244A7C"></i>Isha</span>
+        </div>
+      </div>
+      <p class="tracker-hint" id="trackerHint">Select a date to update its five prayer records.</p>
+    </section>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-item active" data-tab="overview"><span>⌂</span><small>Overview</small></button>
+      <button class="nav-item" data-tab="qaza"><span>☾</span><small>Qaza Tracker</small></button>
+      <button class="nav-item" data-tab="current"><span>◷</span><small>Current</small></button>
+    </nav>
+  </main>
+
+  <!-- Day details -->
+  <div class="modal-backdrop" id="dayModal" hidden>
+    <section class="day-sheet" role="dialog" aria-modal="true" aria-labelledby="dayTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <div><p class="eyebrow" id="modalType">QAZA RECORD</p><h2 id="dayTitle">6 November 2026</h2></div>
+        <button class="close-btn" id="closeModal" aria-label="Close">×</button>
+      </div>
+      <p class="day-progress" id="dayProgress">0 of 5 completed</p>
+      <div class="day-progress-track"><i id="dayBar"></i></div>
+      <div class="prayer-list" id="prayerList"></div>
+      <div class="sheet-actions">
+        <button class="secondary-btn" id="clearDay">Clear date</button>
+        <button class="primary-btn" id="markAll">Mark all five</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Settings -->
+  <div class="modal-backdrop" id="settingsModal" hidden>
+    <section class="day-sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <div><p class="eyebrow">YOUR DATA</p><h2 id="settingsTitle">Settings and backup</h2></div>
+        <button class="close-btn" id="closeSettings" aria-label="Close">×</button>
+      </div>
+      <p class="settings-info" id="settingsInfo"></p>
+
+      <h3 class="settings-h">Google Drive sync</h3>
+      <div id="syncOff">
+        <p class="settings-info">Saves your records in your own Google Drive automatically, with a daily backup, so a new phone gets everything back. Setup steps are in README.txt.</p>
+        <input class="text-input" id="syncLink" placeholder="Connection code, or Web app link" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <input class="text-input" id="syncSecret" placeholder="Secret code (not needed with a connection code)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button class="setting-row" id="syncConnectBtn"><b>Connect to Google Drive</b><small>Records on this phone are kept and merged with the ones in Drive.</small></button>
+      </div>
+      <div id="syncOn" hidden>
+        <p class="settings-info" id="syncStatusText"></p>
+        <div class="settings-list">
+          <button class="setting-row" id="syncNowBtn"><b>Sync now</b><small>Normally this happens by itself after every change.</small></button>
+          <button class="setting-row" id="syncCodeBtn"><b>Show connection code for another phone</b><small>On a new phone: paste this code in the same place. Keep it private, it contains your secret.</small></button>
+          <textarea class="text-input code-box" id="syncCodeBox" readonly hidden rows="4"></textarea>
+          <button class="setting-row" id="syncDisconnectBtn"><b>Disconnect from Google Drive</b><small>Records stay on this phone and in Drive. They just stop syncing.</small></button>
+        </div>
+      </div>
+
+      <h3 class="settings-h">Backup</h3>
+      <div class="settings-list">
+        <button class="setting-row" id="backupBtn"><b>Download full backup</b><small>One file with both trackers (.json). Keep it somewhere safe.</small></button>
+        <button class="setting-row" id="restoreBtn"><b>Restore from backup</b><small>Replaces all records on this device with a backup file. A safety copy is saved first.</small></button>
+        <button class="setting-row" id="snapshotBtn" hidden><b>Go back to the last safety copy</b><small id="snapshotInfo"></small></button>
+      </div>
+
+      <h3 class="settings-h">Spreadsheet files (CSV)</h3>
+      <div class="settings-list">
+        <button class="setting-row" id="csvQazaBtn"><b>Export Qaza as CSV</b><small>Date, Fajr, Zuhr, Asr, Maghrib, Isha</small></button>
+        <button class="setting-row" id="csvCurrentBtn"><b>Export Current as CSV</b><small>Same columns, current records only.</small></button>
+        <button class="setting-row" id="csvImportBtn"><b>Import from CSV</b><small>For example the old Google Sheet "Prayer_Data" tab. Only adds completed prayers; nothing is removed.</small></button>
+      </div>
+
+      <input type="file" id="restoreFile" hidden accept=".json,application/json,text/plain">
+      <input type="file" id="csvFile" hidden accept=".csv,text/csv,text/plain,application/vnd.ms-excel">
+    </section>
+  </div>
+
+  <!-- Confirm -->
+  <div class="modal-backdrop confirm-backdrop" id="confirmModal" hidden>
+    <section class="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+      <h2 id="confirmTitle">Are you sure?</h2>
+      <p id="confirmText"></p>
+      <div class="sheet-actions">
+        <button class="secondary-btn" id="confirmCancel">Cancel</button>
+        <button class="primary-btn" id="confirmOk">OK</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="core.js"></script>
+  <script src="sync.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
