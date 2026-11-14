@@ -69,8 +69,39 @@
           <span class="progress-track"><i id="qazaBar"></i></span>
           <span class="progress-foot"><span id="qazaRemaining">0 remaining</span><span id="qazaPercent">0%</span></span>
         </div>
+
+        <!-- 3. Daily Arc Challenge (habits) -->
+        <div class="progress-card habits-card" id="habitsJump" role="button" tabindex="0" aria-label="Open Daily Arc Challenge">
+          <span class="card-topline"><span>Daily Arc Challenge</span><span class="arrow">↗</span></span>
+          <span class="habit-stats" id="habitStats"></span>
+        </div>
       </section>
     </div>
+
+    <!-- HABITS -->
+    <section class="tracker-section" id="habitsSection" hidden>
+      <div class="section-heading tracker-heading">
+        <div>
+          <p class="eyebrow">DAILY HABITS</p>
+          <h2>Daily Arc Challenge</h2>
+        </div>
+        <button class="today-btn" id="habitTodayBtn">Today</button>
+      </div>
+      <div class="calendar-card habit-card">
+        <div class="month-controls">
+          <button class="month-arrow" id="habitPrev" aria-label="Previous day">‹</button>
+          <h3 id="habitDayTitle">Day 1/30 • Date: 01-11-26</h3>
+          <button class="month-arrow" id="habitNext" aria-label="Next day">›</button>
+        </div>
+        <div class="habit-list" id="habitList"></div>
+        <div class="habit-score">
+          <b id="habitScoreText">Score = 0/0 = 0.0%</b>
+          <span class="progress-track"><i id="habitScoreBar"></i></span>
+        </div>
+      </div>
+      <button class="secondary-btn habit-edit-btn" id="habitEditBtn">Edit habits</button>
+      <p class="tracker-hint" id="habitHint">Tap a habit to switch it between ✗ and ✓.</p>
+    </section>
 
     <!-- TRACKER (shared calendar for Qaza and Current) -->
     <section class="tracker-section" id="trackerSection" hidden>
@@ -105,6 +136,7 @@
 
     <nav class="bottom-nav" aria-label="Main navigation">
       <button class="nav-item active" data-tab="overview"><span>⌂</span><small>Overview</small></button>
+      <button class="nav-item" data-tab="habits"><span>☑</span><small>Habits</small></button>
       <button class="nav-item" data-tab="qaza"><span>☾</span><small>Qaza Tracker</small></button>
       <button class="nav-item" data-tab="current"><span>◷</span><small>Current</small></button>
     </nav>
@@ -125,6 +157,28 @@
         <button class="secondary-btn" id="clearDay">Clear date</button>
         <button class="primary-btn" id="markAll">Mark all five</button>
       </div>
+    </section>
+  </div>
+
+  <!-- Habit editor -->
+  <div class="modal-backdrop" id="habitModal" hidden>
+    <section class="day-sheet" role="dialog" aria-modal="true" aria-labelledby="habitModalTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <div><p class="eyebrow">DAILY ARC CHALLENGE</p><h2 id="habitModalTitle">Edit habits</h2></div>
+        <button class="close-btn" id="closeHabitModal" aria-label="Close">×</button>
+      </div>
+      <p class="settings-info">A removed habit disappears from today onwards. Past days keep the score they already had.</p>
+      <div class="settings-list" id="habitEditList"></div>
+      <div class="habit-form" id="habitForm" hidden>
+        <input class="text-input" id="habitName" maxlength="80" placeholder="Habit name" autocomplete="off">
+        <label class="check-row" id="habitFriRow"><input type="checkbox" id="habitFri"> <span>Only on Fridays</span></label>
+        <div class="sheet-actions">
+          <button class="secondary-btn" id="habitCancel">Cancel</button>
+          <button class="primary-btn" id="habitSave">Save</button>
+        </div>
+      </div>
+      <button class="primary-btn habit-add-btn" id="habitAddBtn">+ Add habit</button>
     </section>
   </div>
 
@@ -188,6 +242,7 @@
 
   <div class="toast" id="toast" role="status"></div>
   <script src="core.js"></script>
+  <script src="habits.js"></script>
   <script src="sync.js"></script>
   <script src="app.js"></script>
 </body>

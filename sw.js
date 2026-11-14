@@ -1,6 +1,6 @@
 /* Offline support. Tries the network first (so updates arrive), falls back to the saved copy when offline. */
-const CACHE = "qaza-salah-v2-2";
-const FILES = ["./", "index.html", "styles.css", "core.js", "sync.js", "app.js", "manifest.webmanifest",
+const CACHE = "qaza-salah-v3-1";
+const FILES = ["./", "index.html", "styles.css", "core.js", "habits.js", "sync.js", "app.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/splash-1290x2796.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

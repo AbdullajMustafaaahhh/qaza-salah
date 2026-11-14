@@ -26,6 +26,8 @@
   const storage = pickStorage();
   const store = C.createStore(storage, { getTodayKey: todayKey });
   const loadInfo = store.load();
+  const habits = window.SalahHabits.createHabits(storage, { getTodayKey: todayKey });
+  habits.load();
 
   // ---------- state ----------
   let view = "overview";          // "overview" | "qaza" | "current"
@@ -33,6 +35,8 @@
   const cal = { qaza: { year: 2010, month: 2 }, current: C.activeCurrentMonth(todayKey()) };
   let toastTimer;
   let lastDay = todayKey();
+  let habitDate = todayKey();     // the day shown on the Habits screen
+  let editingHabit = null;        // id of the habit being renamed (null = adding a new one)
 
   const fmtN = n => Number(n).toLocaleString("en-US");
   const pct1 = p => p.toFixed(1) + "%";
@@ -66,8 +70,67 @@
     $("qazaRemaining").textContent = fmtN(q.remaining) + " remaining";
     $("qazaPercent").textContent = pct1(q.pct);
     $("qazaBar").style.width = q.pct + "%";
+    renderHabitStats();
     $("todayLabel").textContent = now().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   }
+
+  // ---------- habits (Daily Arc Challenge) ----------
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const shortKey = key => key.slice(8, 10) + "-" + key.slice(5, 7) + "-" + key.slice(2, 4);
+
+  function renderHabitStats() {
+    const today = todayKey(), y = Number(today.slice(0, 4)), m0 = Number(today.slice(5, 7)) - 1;
+    const rows = [
+      ["Today", habits.dayScore(today), "habits done"],
+      [C.monthTitle(y, m0), habits.monthStats(y, m0), "habit checks this month"],
+      [String(y), habits.yearStats(y), "habit checks this year"]
+    ];
+    $("habitStats").innerHTML = rows.map(r =>
+      `<span class="hstat"><span class="hstat-top"><span class="hstat-label">${esc(r[0])}</span><span class="hstat-pct">${pct1(r[1].pct)}</span></span>` +
+      `<span class="progress-track"><i style="width:${r[1].pct}%"></i></span>` +
+      `<span class="hstat-detail">${fmtN(r[1].done)} / ${fmtN(r[1].total)} ${r[2]}</span></span>`).join("");
+  }
+
+  function renderHabits() {
+    if (view !== "habits") return;
+    const key = habitDate, today = todayKey(), list = habits.applicable(key), done = new Set(habits.doneIds(key));
+    const info = habits.dayInfo(key), sc = habits.dayScore(key);
+    $("habitDayTitle").textContent = "Day " + info.day + "/" + info.daysInMonth + " • Date: " + shortKey(key);
+    const locked = key > today;
+    $("habitList").innerHTML = list.length ? list.map((h, i) =>
+      `<button class="habit-row${done.has(h.id) ? " done" : ""}" data-id="${esc(h.id)}" aria-pressed="${done.has(h.id)}"${locked ? " disabled" : ""}>` +
+      `<span class="habit-name">${i + 1}. ${esc(h.name)}</span><span class="habit-mark">${done.has(h.id) ? "✓" : "✗"}</span></button>`).join("")
+      : '<p class="tracker-hint">No habits were active on this day.</p>';
+    $("habitScoreText").textContent = "Score = " + sc.done + "/" + sc.total + " = " + pct1(sc.pct);
+    $("habitScoreBar").style.width = sc.pct + "%";
+    $("habitNext").disabled = key >= today;
+    $("habitPrev").disabled = key <= window.SalahHabits.MIN_DATE;
+    $("habitTodayBtn").hidden = key === today;
+  }
+  function shiftHabitDay(delta) {
+    const [y, m, d] = habitDate.split("-").map(Number), t = new Date(Date.UTC(y, m - 1, d + delta));
+    habitDate = C.dateKey(new Date(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()));
+    renderHabits();
+  }
+
+  function renderHabitEditor() {
+    $("habitEditList").innerHTML = habits.editable(todayKey()).map(h =>
+      `<div class="habit-edit-row"><span class="habit-name">${esc(h.name)}${h.fridayOnly ? "<small>Only on Fridays</small>" : ""}</span>` +
+      `<span class="habit-edit-actions"><button class="mini-btn" data-act="rename" data-id="${esc(h.id)}">Rename</button>` +
+      `<button class="mini-btn danger" data-act="remove" data-id="${esc(h.id)}">Remove</button></span></div>`).join("");
+  }
+  function showHabitForm(id) {
+    editingHabit = id || null;
+    const cur = id ? habits.editable(todayKey()).find(h => h.id === id) : null;
+    $("habitName").value = cur ? cur.name : ""; $("habitFri").checked = false;
+    $("habitFriRow").hidden = !!id;                  // the Friday rule is chosen once, when the habit is created
+    $("habitForm").hidden = false; $("habitAddBtn").hidden = true;
+    $("habitName").focus();
+  }
+  function hideHabitForm() { $("habitForm").hidden = true; $("habitAddBtn").hidden = false; editingHabit = null; }
+  function openHabitEditor() { hideHabitForm(); renderHabitEditor(); $("habitModal").hidden = false; }
+  function closeHabitEditor() { $("habitModal").hidden = true; hideHabitForm(); renderHabits(); renderOverview(); }
+  function habitsChanged() { renderHabitEditor(); renderHabits(); renderOverview(); syncSoon(); }
 
   // ---------- calendar ----------
   function ring(rec) {
@@ -77,7 +140,7 @@
   }
 
   function renderCalendar() {
-    if (view === "overview") return;
+    if (view !== "qaza" && view !== "current") return;
     const tracker = view, c = cal[tracker], today = todayKey();
     $("monthTitle").textContent = C.monthTitle(c.year, c.month);
     const grid = $("calendarGrid"); grid.innerHTML = "";
@@ -104,14 +167,16 @@
     }
   }
 
-  function refreshAll() { renderOverview(); renderCalendar(); }
+  function refreshAll() { renderOverview(); renderCalendar(); renderHabits(); }
 
   // ---------- navigation ----------
   function showView(next) {
     view = next; selected = null;
+    if (next === "habits") habitDate = todayKey();
     document.querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.tab === next));
     $("overviewSection").hidden = next !== "overview";
-    $("trackerSection").hidden = next === "overview";
+    $("habitsSection").hidden = next !== "habits";
+    $("trackerSection").hidden = next !== "qaza" && next !== "current";
     if (next === "qaza") {
       cal.qaza = qazaStartMonth();                 // month of the last completed Qaza prayer
       $("trackerEyebrow").textContent = "HISTORICAL QAZA";
@@ -137,7 +202,7 @@
 
   // ---------- day sheet ----------
   function openDay(key) {
-    if (view === "overview" || !store.canEdit(view, key)) return;
+    if ((view !== "qaza" && view !== "current") || !store.canEdit(view, key)) return;
     selected = key;
     $("modalType").textContent = view === "qaza" ? "QAZA RECORD" : "CURRENT RECORD";
     $("dayTitle").textContent = longDate(key);
@@ -216,7 +281,7 @@
   const STATE_TEXT = { idle: "Connected", syncing: "Syncing...", synced: "Saved to Drive", offline: "Offline", error: "Sync problem" };
   let syncer = null;
   syncer = window.SalahSync.createSync({
-    store, storage,
+    store, habits, storage,
     fetchFn: (u, o) => window.fetch(u, o),
     onStatus: renderSyncStatus,
     onDataChanged: () => { refreshAll(); if (!$("settingsModal").hidden) renderSettings(); }
@@ -238,7 +303,7 @@
   // ---------- settings ----------
   function renderSettings() {
     const c = store.dayCounts();
-    $("settingsInfo").textContent = (syncer.isConnected() ? "Records are saved on this phone and in your Google Drive. " : "Records are saved on this device only. ") + "Qaza: " + dayWord(c.qaza) + " with records. Current: " + dayWord(c.current) + " with records." +
+    $("settingsInfo").textContent = (syncer.isConnected() ? "Records are saved on this phone and in your Google Drive. " : "Records are saved on this device only. ") + "Qaza: " + dayWord(c.qaza) + " with records. Current: " + dayWord(c.current) + " with records. Habits: " + dayWord(habits.dayCount()) + " recorded." +
       (storageOk ? "" : " WARNING: this browser is blocking storage, so records will be lost when you close the app.") +
       (location.protocol === "file:" ? " NOTE: you opened this as a plain file. Chrome and Edge can lose recent changes in this mode. Download a backup now and use the app from the web address on your iPhone." : "");
     const on = syncer.isConnected();
@@ -252,7 +317,7 @@
   function closeSettings() { $("settingsModal").hidden = true; }
 
   async function doBackup() {
-    const r = await saveFile("qaza-salah-backup-" + stamp() + ".json", JSON.stringify(store.exportData(), null, 2), "application/json");
+    const r = await saveFile("qaza-salah-backup-" + stamp() + ".json", JSON.stringify(Object.assign(store.exportData(), { habits: habits.exportData() }), null, 2), "application/json");
     if (r !== "cancelled") toast(r === "shared" ? "Backup ready. Choose Save to Files." : "Backup file downloaded.");
   }
   async function doRestoreFile(file) {
@@ -261,15 +326,18 @@
     const v = store.validateBackup(obj);
     if (!v.ok) { await confirmDialog({ title: "Cannot restore", message: v.error, ok: "OK", single: true }); return; }
     const cur = store.dayCounts();
+    const hv = obj && obj.habits ? habits.validate(obj.habits) : null;
+    const hNote = hv && hv.ok ? " Daily Arc Challenge habits in the file (" + fmtN(Object.keys(hv.days).length) + " days) replace the current habits too; that part cannot be undone here (Drive keeps daily backups)." : "";
     const ok = await confirmDialog({
       title: "Replace all records?",
       message: "The backup has Qaza: " + fmtN(Object.keys(v.qaza).length) + " days (" + fmtN(countPrayers(v.qaza)) + " prayers) and Current: " + fmtN(Object.keys(v.current).length) + " days (" + fmtN(countPrayers(v.current)) + " prayers). " +
-        "This replaces the records now on this device (Qaza " + fmtN(cur.qaza) + " days, Current " + fmtN(cur.current) + " days). A safety copy is saved first, so you can undo this in Settings.",
+        "This replaces the records now on this device (Qaza " + fmtN(cur.qaza) + " days, Current " + fmtN(cur.current) + " days). A safety copy of Qaza and Current is saved first, so you can undo that part in Settings." + hNote,
       ok: "Replace records"
     });
     if (!ok) return;
     const res = store.restore(obj);
     if (!res.ok) { toast(res.error); return; }
+    if (hv && hv.ok) { const hr = habits.importAll(obj.habits); if (!hr.ok) { toast("Prayer records restored, but habits could not be: " + hr.error); renderSettings(); refreshAll(); syncSoon(); return; } }
     toast("Backup restored."); renderSettings(); refreshAll(); syncSoon();
   }
   async function doCsvImport(file) {
@@ -315,6 +383,36 @@
   }
   onCard($("currentJump"), () => showView("current"));
   onCard($("qazaJump"), () => showView("qaza"));
+  onCard($("habitsJump"), () => showView("habits"));
+  $("habitPrev").addEventListener("click", () => shiftHabitDay(-1));
+  $("habitNext").addEventListener("click", () => shiftHabitDay(1));
+  $("habitTodayBtn").addEventListener("click", () => { habitDate = todayKey(); renderHabits(); });
+  $("habitList").addEventListener("click", e => {
+    const b = e.target.closest(".habit-row"); if (!b || b.disabled) return;
+    const id = b.dataset.id, isDone = new Set(habits.doneIds(habitDate)).has(id);
+    const r = habits.setDone(habitDate, id, !isDone);
+    if (!r.ok) toast(r.error);
+    renderHabits(); renderOverview(); syncSoon();
+  });
+  $("habitEditBtn").addEventListener("click", openHabitEditor);
+  $("closeHabitModal").addEventListener("click", closeHabitEditor);
+  $("habitModal").addEventListener("click", e => { if (e.target === $("habitModal")) closeHabitEditor(); });
+  $("habitAddBtn").addEventListener("click", () => showHabitForm(null));
+  $("habitCancel").addEventListener("click", hideHabitForm);
+  $("habitSave").addEventListener("click", () => {
+    const r = editingHabit ? habits.renameHabit(editingHabit, $("habitName").value) : habits.addHabit($("habitName").value, $("habitFri").checked);
+    if (!r.ok) { toast(r.error); return; }
+    hideHabitForm(); habitsChanged();
+  });
+  $("habitEditList").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-act]"); if (!b) return;
+    const id = b.dataset.id, h = habits.editable(todayKey()).find(x => x.id === id); if (!h) return;
+    if (b.dataset.act === "rename") { showHabitForm(id); return; }
+    const ok = await confirmDialog({ title: "Remove this habit?", message: "\u201c" + h.name + "\u201d will not appear or count from today onwards. Past days keep the score they already had.", ok: "Remove" });
+    if (!ok) return;
+    const r = habits.removeHabit(id);
+    if (!r.ok) toast(r.error); else habitsChanged();
+  });
   document.querySelectorAll(".nav-item").forEach(b => b.addEventListener("click", () => showView(b.dataset.tab)));
   $("prevMonth").addEventListener("click", () => shiftMonth(-1));
   $("nextMonth").addEventListener("click", () => shiftMonth(1));
@@ -380,6 +478,7 @@
     if (e.key !== "Escape") return;
     if (!$("confirmModal").hidden) closeConfirm(false);
     else if (!$("settingsModal").hidden) closeSettings();
+    else if (!$("habitModal").hidden) closeHabitEditor();
     else if (!$("dayModal").hidden) closeDay();
   });
 
@@ -387,7 +486,9 @@
   function checkNewDay() {
     const k = todayKey();
     if (k !== lastDay) {
+      const habitsWasToday = habitDate === lastDay;
       lastDay = k;
+      if (habitsWasToday) habitDate = k;
       if (view === "current") cal.current = C.activeCurrentMonth(k);
       refreshAll();
     }
@@ -412,5 +513,5 @@
   if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
-  window.__salah = { store, showView, syncer };   // used by the automatic tests
+  window.__salah = { store, habits, showView, syncer };   // used by the automatic tests
 })();

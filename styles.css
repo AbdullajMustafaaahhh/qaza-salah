@@ -59,3 +59,36 @@ button{font:inherit;touch-action:manipulation;cursor:pointer}body{overflow-x:hid
 .text-input:focus{outline:2px solid var(--accent);outline-offset:1px}
 .code-box{font-size:12px;word-break:break-all;resize:none}
 @media (prefers-reduced-motion:reduce){.splash{animation-duration:.01s;animation-delay:.6s}}
+
+/* ---- Habits (Daily Arc Challenge) ---- */
+.bottom-nav{grid-template-columns:repeat(4,1fr);padding-left:8px;padding-right:8px}
+.nav-item small{font-size:10px;white-space:nowrap}
+.habits-card .progress-track i,.habit-score .progress-track i{background:var(--accent)}
+.habit-stats{display:block;margin-top:2px}
+.hstat{display:block;margin-top:14px}
+.hstat-top{display:flex;align-items:baseline;justify-content:space-between;font-size:13px}
+.hstat-label{font-weight:650;color:#34434e}
+.hstat-pct{font-size:20px;font-weight:760;letter-spacing:-.5px}
+.hstat .progress-track{margin-top:6px}
+.hstat-detail{display:block;font-size:11px;color:var(--muted);margin-top:5px}
+.habit-card{padding-bottom:16px}
+.habit-card .month-controls h3{font-size:14px;text-align:center}
+.habit-list{display:grid}
+.habit-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:11px 4px;min-height:48px;font-size:14px;color:var(--ink)}
+.habit-row:last-child{border-bottom:0}
+.habit-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.habit-mark{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:760;background:#f6e9e6;color:#b5523f}
+.habit-row.done .habit-mark{background:#e4f1ec;color:#2f6f5b}
+.habit-row:disabled{opacity:.5;cursor:default}
+.habit-score{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.habit-score b{display:block;font-size:16px;margin-bottom:8px}
+.habit-edit-btn{width:100%;margin-top:12px}
+.habit-form{margin:14px 0 4px}
+.check-row{display:flex;align-items:center;gap:10px;font-size:14px;margin:4px 2px 14px}
+.check-row input{width:20px;height:20px}
+.habit-add-btn{width:100%;margin-top:14px}
+.habit-edit-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:13px;padding:10px 12px;background:#fff}
+.habit-edit-row .habit-name small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.habit-edit-actions{display:flex;gap:6px;flex:none}
+.mini-btn{border:1px solid var(--line);background:#fff;border-radius:16px;padding:7px 11px;font-size:12px;color:var(--accent);font-weight:650;min-height:34px}
+.mini-btn.danger{color:#a2402f}

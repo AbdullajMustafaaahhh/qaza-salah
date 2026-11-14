@@ -37,6 +37,7 @@
 
   function createSync(opts) {
     const store = opts.store, storage = opts.storage, fetchFn = opts.fetchFn;
+    const habits = opts.habits || null;      // the Daily Arc Challenge data (optional)
     const nowMs = opts.nowMs || (() => Date.now());
     const onStatus = opts.onStatus || function () {};
     const onDataChanged = opts.onDataChanged || function () {};
@@ -88,6 +89,7 @@
       }
       store.makeSnapshot("before connecting to Drive");
       store.markAllDirty();
+      if (habits) habits.markAllDirty();
       if (!saveCfg()) { cfg = prev; return { ok: false, error: "Could not save the connection on this device." }; }
       const res = await syncNow();
       return res.ok ? { ok: true } : res;
@@ -101,16 +103,22 @@
       let result = { ok: true };
       try {
         const changes = store.getChanges();
+        if (habits) changes.habits = habits.getChanges();
         const r = await post({ action: "sync", since: cfg.rev, changes });
         if (!r.ok) {
           result = { ok: false, error: r.error === "unauthorized" ? "Wrong secret code." : "Server error: " + r.error };
           setStatus("error", result.error);
         } else {
           store.clearDirty(changes);                       // the server has saved everything we sent
-          const applied = store.applyRemote(r.records);    // may mark a combined result as "still to send"
+          if (habits) habits.clearDirty(changes.habits);
+          let applied = store.applyRemote(r.records);      // may mark a combined result as "still to send"
+          if (applied.ok && habits) {
+            const h = habits.applyRemote(r.records.habits);
+            if (!h.ok) applied = h; else applied = { ok: true, changed: applied.changed + h.changed };
+          }
           if (!applied.ok) { result = { ok: false, error: applied.error }; setStatus("error", applied.error); }
           else {
-            if (store.dirtyCount() > 0) again = true;      // edits made during the request, or a combined result
+            if (pendingCount() > 0) again = true;          // edits made during the request, or a combined result
             cfg.rev = r.rev; cfg.lastSync = nowMs(); saveCfg();
             if (applied.changed) onDataChanged(applied.changed);
             setStatus("synced", "Synced");
@@ -125,6 +133,7 @@
       return result;
     }
 
+    const pendingCount = () => store.dirtyCount() + (habits ? habits.dirtyCount() : 0);
     function schedule(ms) {
       if (!cfg) return;
       clearTimer(timer);
@@ -141,7 +150,7 @@
     return {
       connect, syncNow, schedule, disconnect, makeCode,
       isConnected: () => !!cfg, getStatus: () => status, isRunning: () => running,
-      pending: () => store.dirtyCount()
+      pending: () => pendingCount()
     };
   }
 
